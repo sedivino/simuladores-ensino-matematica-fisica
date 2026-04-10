@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Análise Combinatória — Revisa Goiás</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d45;
+    --accent1: #00e5ff;
+    --accent2: #ff6b35;
+    --accent3: #a855f7;
+    --accent4: #22c55e;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --gold: #fbbf24;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BACKGROUND GRID */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; }
+
+  /* HEADER */
+  header {
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,14,26,0.9);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent1), var(--accent3));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .logo h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem; font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .logo span { color: var(--accent1); }
+  .badge {
+    font-size: 0.7rem; color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 3px 10px; border-radius: 20px;
+  }
+
+  /* NAV TABS */
+  nav {
+    display: flex; gap: 0;
+    padding: 0 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    overflow-x: auto;
+  }
+  nav button {
+    background: none; border: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; font-weight: 500;
+    padding: 14px 20px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.active {
+    color: var(--accent1);
+    border-bottom-color: var(--accent1);
+  }
+
+  /* MAIN LAYOUT */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px;
+  }
+
+  /* MODULES */
+  .module { display: none; }
+  .module.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+  /* MODULE HEADER */
+  .mod-header {
+    margin-bottom: 28px;
+  }
+  .mod-tag {
+    display: inline-block;
+    font-size: 0.7rem; font-weight: 600;
+    letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent1);
+    margin-bottom: 8px;
+  }
+  .mod-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem; font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .mod-header p { color: var(--muted); font-size: 0.95rem; }
+
+  /* LAYOUT CARDS */
+  .layout-2 {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 20px;
+  }
+  @media (max-width: 768px) {
+    .layout-2 { grid-template-columns: 1fr; }
+    main { padding: 16px; }
+    nav button { padding: 12px 14px; font-size: 0.78rem; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem; font-weight: 700;
+    margin-bottom: 18px;
+    color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card h3 .icon { font-size: 1.1rem; }
+
+  /* CONTROLS */
+  .control-group { margin-bottom: 20px; }
+  .control-group label {
+    display: block;
+    font-size: 0.82rem; font-weight: 500;
+    color: var(--muted);
+    margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .slider-wrap {
+    display: flex; align-items: center; gap: 12px;
+  }
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px; height: 18px;
+    background: var(--accent1);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(0,229,255,0.5);
+  }
+  .val-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 12px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--accent1);
+    min-width: 44px; text-align: center;
+  }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--accent1);
+    color: #000;
+  }
+  .btn-primary:hover { background: #33eaff; transform: translateY(-1px); }
+  .btn-ghost {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-ghost:hover { border-color: var(--accent1); color: var(--accent1); }
+  .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+  /* RESULT BOX */
+  .result-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+  .result-box .label { font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
+  .result-formula {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .result-total {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem; font-weight: 800;
+    color: var(--gold);
+  }
+
+  /* FEEDBACK BOX */
+  .feedback {
+    background: rgba(0,229,255,0.05);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-top: 16px;
+    font-size: 0.88rem;
+    color: var(--accent1);
+    line-height: 1.6;
+  }
+  .feedback strong { font-weight: 600; }
+
+  /* ====== MODULE 1: FILAS ====== */
+  #vis-fila {
+    width: 100%;
+    min-height: 300px;
+    overflow-x: auto;
+  }
+
+  .fila-container {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+  .fila-slot {
+    width: 60px; height: 80px;
+    background: var(--surface2);
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 0.7rem; color: var(--muted);
+    transition: all 0.3s;
+    position: relative;
+  }
+  .fila-slot.filled {
+    border-style: solid;
+    border-color: var(--accent1);
+    background: rgba(0,229,255,0.08);
+  }
+  .fila-slot .pos-label {
+    position: absolute; top: 4px;
+    font-size: 0.62rem; color: var(--muted);
+  }
+  .person-emoji { font-size: 1.8rem; }
+  .step-counter {
+    display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;
+  }
+  .step-chip {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.82rem;
+  }
+  .step-chip .num {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+  .step-chip.c1 .num { color: var(--accent1); }
+  .step-chip.c2 .num { color: var(--accent2); }
+  .step-chip.c3 .num { color: var(--accent3); }
+  .step-chip.c4 .num { color: var(--accent4); }
+  .step-chip.c5 .num { color: var(--gold); }
+
+  /* PERMUTATION ANIMATION */
+  .perm-list {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 12px;
+    max-height: 200px; overflow-y: auto;
+  }
+  .perm-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    font-family: 'Syne', sans-serif;
+    animation: popIn 0.2s ease;
+  }
+  @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  /* ====== MODULE 2: SANDUÍCHE ====== */
+  .sandwich-grid {
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .sw-category { }
+  .sw-cat-label {
+    font-size: 0.75rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sw-options { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sw-option {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .sw-option:hover { border-color: var(--accent2); }
+  .sw-option.selected {
+    border-color: var(--accent2);
+    background: rgba(255,107,53,0.12);
+    color: var(--accent2);
+  }
+
+  .sandwich-visual {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; margin: 16px 0;
+  }
+  .sw-layer {
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 0.82rem;
+    text-align: center;
+    transition: all 0.3s;
+    min-width: 160px;
+  }
+  .sw-layer.pao { background: #854d0e; color: #fef3c7; border-radius: 20px 20px 4px 4px; }
+  .sw-layer.pao.bottom { border-radius: 4px 4px 20px 20px; }
+  .sw-layer.queijo { background: #ca8a04; color: #000; }
+  .sw-layer.carne { background: #991b1b; color: #fee2e2; }
+  .sw-layer.salada { background: #166534; color: #dcfce7; }
+  .sw-layer.molho { background: #c2410c; color: #fff; }
+  .sw-layer.empty { background: var(--surface2); color: var(--muted); border: 1px dashed var(--border); }
+
+  .formula-row {
+    display: flex; align-items: center; gap: 6px;
+    flex-wrap: wrap; margin-top: 12px;
+  }
+  .formula-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem; font-weight: 700;
+  }
+  .formula-chip.highlight { border-color: var(--accent2); color: var(--accent2); }
+  .formula-op { color: var(--muted); font-size: 1.1rem; }
+
+  /* ====== MODULE 3: VESTUÁRIO ====== */
+  .avatar-stage {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 8px;
+    padding: 24px 0;
+  }
+  .avatar-piece {
+    border-radius: 12px;
+    padding: 8px 24px;
+    font-size: 0.85rem;
+    text-align: center;
+    min-width: 140px;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+  }
+  .avatar-piece.head { background: #1e3a5f; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; min-width: unset; padding: 0; }
+  .avatar-piece.shirt { background: var(--surface2); border-color: var(--border); }
+  .avatar-piece.pants { background: var(--surface2); border-color: var(--border); }
+  .avatar-piece.shoes { background: var(--surface2); border-color: var(--border); }
+  .avatar-piece.filled-shirt { background: rgba(0,229,255,0.12); border-color: var(--accent1); color: var(--accent1); }
+  .avatar-piece.filled-pants { background: rgba(168,85,247,0.12); border-color: var(--accent3); color: var(--accent3); }
+  .avatar-piece.filled-shoes { background: rgba(34,197,94,0.12); border-color: var(--accent4); color: var(--accent4); }
+
+  .vest-controls { display: flex; flex-direction: column; gap: 14px; }
+  .vest-group label {
+    display: block; font-size: 0.75rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+  }
+
+  /* ====== MODULE 4: NÚMEROS ====== */
+  .num-display {
+    display: flex; gap: 8px; justify-content: center;
+    margin: 20px 0;
+  }
+  .digit-box {
+    width: 52px; height: 68px;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem; font-weight: 700;
+    transition: all 0.3s;
+  }
+  .digit-box.slot1 { border-color: var(--accent1); color: var(--accent1); }
+  .digit-box.slot2 { border-color: var(--accent3); color: var(--accent3); }
+  .digit-box.slot3 { border-color: var(--accent4); color: var(--accent4); }
+  .digit-box.slot4 { border-color: var(--accent2); color: var(--accent2); }
+
+  .checkbox-group {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;
+  }
+  .cb-item {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .cb-item.on { border-color: var(--accent3); background: rgba(168,85,247,0.1); color: var(--accent3); }
+  .cb-check { width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid var(--muted); display: inline-block; }
+  .cb-item.on .cb-check { background: var(--accent3); border-color: var(--accent3); }
+
+  .poss-grid {
+    display: flex; flex-wrap: wrap; gap: 5px;
+    max-height: 200px; overflow-y: auto;
+    margin-top: 10px;
+  }
+  .poss-chip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    animation: popIn 0.15s ease;
+  }
+
+  /* ====== MODULE 5: ADITIVO ====== */
+  .additive-vis {
+    display: flex; gap: 16px; align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .set-box {
+    flex: 1; min-width: 160px;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+  .set-box.set-a { border-color: var(--accent1); }
+  .set-box.set-b { border-color: var(--accent2); }
+  .set-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem; font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .set-a .set-title { color: var(--accent1); }
+  .set-b .set-title { color: var(--accent2); }
+  .set-items { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 10px; }
+  .set-item {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    border: 1px solid var(--border);
+  }
+  .set-count {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem; font-weight: 800;
+  }
+  .set-a .set-count { color: var(--accent1); }
+  .set-b .set-count { color: var(--accent2); }
+
+  .operator-col {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 20px 0;
+    gap: 8px;
+  }
+  .op-sym {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.5rem; font-weight: 800;
+    color: var(--gold);
+  }
+  .op-label { font-size: 0.72rem; color: var(--muted); text-align: center; }
+  .result-set {
+    flex: 1; min-width: 160px;
+    background: rgba(251,191,36,0.06);
+    border: 2px solid var(--gold);
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+  }
+  .result-set .set-title { color: var(--gold); }
+  .result-set .set-count { color: var(--gold); }
+
+  /* COMPARISON */
+  .compare-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-top: 20px;
+  }
+  .compare-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+  .compare-card.mult { border-color: var(--accent1); }
+  .compare-card.add { border-color: var(--accent2); }
+  .compare-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem; font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .compare-card.mult h4 { color: var(--accent1); }
+  .compare-card.add h4 { color: var(--accent2); }
+  .compare-card .big { font-size: 2.2rem; font-family: 'Syne', sans-serif; font-weight: 800; }
+  .compare-card p { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+
+  /* MODULE 6: DESAFIO */
+  .quiz-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+  .quiz-num {
+    font-size: 0.72rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+  .quiz-q {
+    font-size: 1rem; line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  .quiz-opts { display: flex; flex-direction: column; gap: 10px; }
+  .quiz-opt {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .quiz-opt:hover { border-color: var(--accent3); }
+  .quiz-opt.correct { border-color: var(--accent4); background: rgba(34,197,94,0.1); color: var(--accent4); }
+  .quiz-opt.wrong { border-color: var(--accent2); background: rgba(255,107,53,0.1); color: var(--accent2); }
+  .quiz-opt.disabled { cursor: default; pointer-events: none; }
+  .opt-letter {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .quiz-feedback {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 0.9rem; line-height: 1.6;
+    display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.ok { background: rgba(34,197,94,0.08); border: 1px solid var(--accent4); color: var(--accent4); }
+  .quiz-feedback.err { background: rgba(255,107,53,0.08); border: 1px solid var(--accent2); color: var(--accent2); }
+
+  .score-bar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 24px;
+  }
+  .score-bar span { font-family: 'Syne', sans-serif; font-weight: 700; }
+  .score-bar .pts { color: var(--gold); font-size: 1.3rem; }
+  .progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent1), var(--accent3));
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  /* TREE SVG */
+  .tree-svg { width: 100%; overflow: visible; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* PRINCIPLE TAG */
+  .principle-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.72rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    padding: 4px 12px; border-radius: 20px;
+    margin-bottom: 12px;
+  }
+  .principle-tag.mult { background: rgba(0,229,255,0.1); color: var(--accent1); border: 1px solid rgba(0,229,255,0.2); }
+  .principle-tag.add { background: rgba(255,107,53,0.1); color: var(--accent2); border: 1px solid rgba(255,107,53,0.2); }
+
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">∑</div>
+    <h1>Análise <span>Combinatória</span></h1>
+  </div>
+  <div class="badge">Revisa Goiás · 3ª Série</div>
+</header>
+
+<!-- NAV -->
+<nav id="main-nav">
+  <button class="active" onclick="showModule(0)">🔢 Filas & PFC</button>
+  <button onclick="showModule(1)">🥪 Sanduíche</button>
+  <button onclick="showModule(2)">👕 Vestuário</button>
+  <button onclick="showModule(3)">🔢 Números</button>
+  <button onclick="showModule(4)">➕ Princípio Aditivo</button>
+  <button onclick="showModule(5)">🎯 Desafio</button>
+</nav>
+
+<main>
+
+<!-- ===== MODULE 0: FILAS & PFC ===== -->
+<div class="module active" id="mod-0">
+  <div class="mod-header">
+    <div class="mod-tag">Módulo 1</div>
+    <h2>Formação de Filas</h2>
+    <p>Explore o Princípio Fundamental da Contagem organizando pessoas em uma fila</p>
+  </div>
+  <div class="principle-tag mult">✕ Princípio Multiplicativo</div>
+
+  <div class="layout-2">
+    <div class="card">
+      <h3><span class="icon">⚙️</span> Controles</h3>
+      <div class="control-group">
+        <label>Número de pessoas</label>
+        <div class="slider-wrap">
+          <input type="range" min="2" max="7" value="3" id="fila-n" oninput="updateFila()">
+          <div class="val-badge" id="fila-n-val">3</div>
+        </div>
+      </div>
+      <div class="result-box">
+        <div class="label">Fórmula (n!)</div>
+        <div class="result-formula" id="fila-formula">3 × 2 × 1</div>
+        <div class="result-total" id="fila-total">6</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:4px;">possibilidades diferentes</div>
+      </div>
+      <div class="feedback" id="fila-feedback">
+        Cada posição tem <strong>1 pessoa a menos</strong> disponível que a anterior, porque ela já foi colocada na fila. Por isso <strong>multiplicamos</strong> as escolhas!
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="animateFila()">▶ Animar</button>
+        <button class="btn btn-ghost" onclick="resetFila()">↺ Reiniciar</button>
+        <button class="btn btn-ghost" onclick="listPerms()">📋 Listar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="icon">👥</span> Visualização</h3>
+      <div class="step-counter" id="fila-steps"></div>
+      <div style="margin-top:16px;">
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Fila atual</div>
+        <div class="fila-container" id="fila-vis"></div>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;" id="perm-label">Permutações</div>
+        <div class="perm-list" id="perm-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODULE 1: SANDUÍCHE ===== -->
+<div class="module" id="mod-1">
+  <div class="mod-header">
+    <div class="mod-tag">Módulo 2</div>
+    <h2>Montagem de Sanduíche</h2>
+    <p>Selecione os ingredientes e veja as combinações possíveis em tempo real</p>
+  </div>
+  <div class="principle-tag mult">✕ Princípio Multiplicativo</div>
+
+  <div class="layout-2">
+    <div class="card">
+      <h3><span class="icon">🥖</span> Escolha os ingredientes</h3>
+      <div class="sandwich-grid" id="sw-grid"></div>
+    </div>
+    <div class="card">
+      <h3><span class="icon">🥪</span> Seu Sanduíche</h3>
+      <div class="sandwich-visual" id="sw-visual"></div>
+      <div style="margin-top:8px;">
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">Cálculo</div>
+        <div class="formula-row" id="sw-formula"></div>
+      </div>
+      <div class="result-box">
+        <div class="label">Total de combinações possíveis</div>
+        <div class="result-total" id="sw-total">54</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:4px;">sanduíches diferentes</div>
+      </div>
+      <div class="feedback">
+        <strong>Por que multiplicar?</strong> Cada decisão é independente — a escolha do pão não afeta a escolha da carne. Eventos independentes em sequência → <strong>multiplicamos</strong>!
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODULE 2: VESTUÁRIO ===== -->
+<div class="module" id="mod-2">
+  <div class="mod-header">
+    <div class="mod-tag">Módulo 3</div>
+    <h2>Montagem de Vestimenta</h2>
+    <p>Quantas combinações de roupa são possíveis?</p>
+  </div>
+  <div class="principle-tag mult">✕ Princípio Multiplicativo</div>
+
+  <div class="layout-2">
+    <div class="card">
+      <h3><span class="icon">⚙️</span> Controles</h3>
+      <div class="vest-controls">
+        <div class="vest-group">
+          <label>👕 Camisetas</label>
+          <div class="slider-wrap">
+            <input type="range" min="1" max="8" value="5" id="vest-shirts" oninput="updateVest()">
+            <div class="val-badge" id="vest-shirts-val">5</div>
+          </div>
+        </div>
+        <div class="vest-group">
+          <label>👖 Calças</label>
+          <div class="slider-wrap">
+            <input type="range" min="1" max="8" value="4" id="vest-pants" oninput="updateVest()">
+            <div class="val-badge" id="vest-pants-val">4</div>
+          </div>
+        </div>
+        <div class="vest-group">
+          <label>👟 Sapatos</label>
+          <div class="slider-wrap">
+            <input type="range" min="1" max="8" value="3" id="vest-shoes" oninput="updateVest()">
+            <div class="val-badge" id="vest-shoes-val">3</div>
+          </div>
+        </div>
+      </div>
+      <div class="result-box">
+        <div class="label">Fórmula</div>
+        <div class="result-formula" id="vest-formula">5 × 4 × 3</div>
+        <div class="result-total" id="vest-total">60</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:4px;">combinações de roupa</div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="animateVest()">▶ Sortear</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="icon">🧍</span> Avatar</h3>
+      <div class="avatar-stage" id="vest-avatar">
+        <div class="avatar-piece head">🙂</div>
+        <div class="avatar-piece shirt empty" id="av-shirt">Camiseta</div>
+        <div class="avatar-piece pants empty" id="av-pants">Calça</div>
+        <div class="avatar-piece shoes empty" id="av-shoes">Sapatos</div>
+      </div>
+      <div class="feedback">
+        <strong>Passo a passo:</strong><br>
+        1ª decisão: escolho 1 entre <strong id="av-s">5</strong> camisetas<br>
+        2ª decisão: escolho 1 entre <strong id="av-p">4</strong> calças<br>
+        3ª decisão: escolho 1 entre <strong id="av-sh">3</strong> sapatos<br>
+        Total: <strong id="av-t">60</strong> combinações
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODULE 3: NÚMEROS ===== -->
+<div class="module" id="mod-3">
+  <div class="mod-header">
+    <div class="mod-tag">Módulo 4</div>
+    <h2>Formação de Números</h2>
+    <p>Forme números com ou sem repetição de algarismos</p>
+  </div>
+  <div class="principle-tag mult">✕ Princípio Multiplicativo</div>
+
+  <div class="layout-2">
+    <div class="card">
+      <h3><span class="icon">⚙️</span> Configuração</h3>
+      <div class="control-group">
+        <label>Quantidade de dígitos</label>
+        <div class="slider-wrap">
+          <input type="range" min="1" max="4" value="2" id="num-digits" oninput="updateNums()">
+          <div class="val-badge" id="num-digits-val">2</div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Algarismos disponíveis</label>
+        <div class="checkbox-group" id="num-alg-group"></div>
+      </div>
+      <div class="control-group">
+        <label>Modo</label>
+        <div style="display:flex;gap:10px;">
+          <div class="cb-item on" id="rep-toggle" onclick="toggleRep()">
+            <span class="cb-check" id="rep-check"></span>
+            Repetição permitida
+          </div>
+        </div>
+      </div>
+      <div class="result-box">
+        <div class="label">Raciocínio</div>
+        <div class="result-formula" id="num-formula">3 × 3</div>
+        <div class="result-total" id="num-total">9</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:4px;">números possíveis</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="icon">🔢</span> Visualização</h3>
+      <div class="num-display" id="num-display"></div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;" id="num-poss-label">Possibilidades</div>
+      <div class="poss-grid" id="poss-grid"></div>
+      <div class="feedback" id="num-feedback" style="margin-top:12px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODULE 4: PRINCÍPIO ADITIVO ===== -->
+<div class="module" id="mod-4">
+  <div class="mod-header">
+    <div class="mod-tag">Módulo 5</div>
+    <h2>Princípio Aditivo</h2>
+    <p>Eventos mutuamente exclusivos — quando somamos em vez de multiplicar</p>
+  </div>
+
+  <div class="layout-2">
+    <div class="card">
+      <h3><span class="icon">⚙️</span> Cenário: Bebidas na Lanchonete</h3>
+      <div class="control-group">
+        <label>🧃 Tipos de suco</label>
+        <div class="slider-wrap">
+          <input type="range" min="1" max="8" value="3" id="add-a" oninput="updateAdd()">
+          <div class="val-badge" id="add-a-val">3</div>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>🥤 Tipos de refrigerante</label>
+        <div class="slider-wrap">
+          <input type="range" min="1" max="8" value="4" id="add-b" oninput="updateAdd()">
+          <div class="val-badge" id="add-b-val">4</div>
+        </div>
+      </div>
+      <div class="result-box">
+        <div class="label">Fórmula</div>
+        <div class="result-formula" id="add-formula">3 + 4</div>
+        <div class="result-total" id="add-total">7</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:4px;">opções de bebida</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-card mult">
+          <div class="principle-tag mult" style="font-size:0.65rem;padding:3px 8px;">✕ Multiplicativo</div>
+          <h4>Se escolhesse SUCO E REFRIGERANTE</h4>
+          <div class="big" id="comp-mult">12</div>
+          <p>combinações (juntos)</p>
+        </div>
+        <div class="compare-card add">
+          <div class="principle-tag add" style="font-size:0.65rem;padding:3px 8px;">+ Aditivo</div>
+          <h4>Escolhendo UM OU OUTRO</h4>
+          <div class="big" id="comp-add">7</div>
+          <p>opções no total</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3><span class="icon">🔵</span> Diagrama de Conjuntos</h3>
+      <div class="additive-vis" id="add-vis">
+        <div class="set-box set-a">
+          <div class="set-title">Sucos</div>
+          <div class="set-items" id="add-a-items"></div>
+          <div class="set-count" id="add-a-count">3</div>
+          <div style="font-size:0.75rem;color:var(--muted)">elementos</div>
+        </div>
+        <div class="operator-col">
+          <div class="op-sym">+</div>
+          <div class="op-label">eventos<br>exclusivos<br>→ soma</div>
+        </div>
+        <div class="set-box set-b">
+          <div class="set-title">Refrigerantes</div>
+          <div class="set-items" id="add-b-items"></div>
+          <div class="set-count" id="add-b-count">4</div>
+          <div style="font-size:0.75rem;color:var(--muted)">elementos</div>
+        </div>
+        <div class="operator-col">
+          <div class="op-sym">=</div>
+        </div>
+        <div class="result-set">
+          <div class="set-title">Total</div>
+          <div class="set-count" id="add-total-big">7</div>
+          <div style="font-size:0.75rem;color:var(--muted)">opções</div>
+        </div>
+      </div>
+      <div class="feedback" style="margin-top:16px;">
+        <strong>Regra de ouro:</strong> Se o estudante vai escolher <em>apenas uma</em> bebida (suco <strong>OU</strong> refrigerante), os eventos são <strong>mutuamente exclusivos</strong> → somamos. Se fosse escolher um de cada → multiplicaríamos!
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODULE 5: DESAFIO ===== -->
+<div class="module" id="mod-5">
+  <div class="mod-header">
+    <div class="mod-tag">Módulo 6</div>
+    <h2>Modo Desafio</h2>
+    <p>Questões baseadas no material Revisa Goiás — resolva e veja a explicação</p>
+  </div>
+
+  <div class="score-bar">
+    <span>Pontuação:</span>
+    <span class="pts" id="score-pts">0</span>
+    <div class="progress-bar"><div class="progress-fill" id="score-prog" style="width:0%"></div></div>
+    <span id="score-frac" style="font-size:0.8rem;color:var(--muted)">0 / 6</span>
+    <button class="btn btn-ghost" onclick="resetQuiz()" style="margin-left:auto;">↺ Reiniciar</button>
+  </div>
+
+  <div id="quiz-container"></div>
+</div>
+
+</main>
+</div>
+
+<script>
+// ============================================================
+// UTILITIES
+// ============================================================
+const factorial = n => n <= 1 ? 1 : n * factorial(n - 1);
+const permutations = (arr) => {
+  if (arr.length <= 1) return [arr];
+  return arr.flatMap((v, i) =>
+    permutations([...arr.slice(0, i), ...arr.slice(i + 1)]).map(p => [v, ...p])
+  );
+};
+const EMOJIS = ['🟦','🟥','🟩','🟨','🟪','🟧','🔴'];
+const NAMES = ['Ana','Bia','Caio','Duda','Edu','Fátima','Gui'];
+const COLORS = ['var(--accent1)','var(--accent2)','var(--accent3)','var(--accent4)','var(--gold)','#f472b6','#38bdf8'];
+
+// ============================================================
+// MODULE SWITCHER
+// ============================================================
+function showModule(idx) {
+  document.querySelectorAll('.module').forEach((m,i) => m.classList.toggle('active', i === idx));
+  document.querySelectorAll('#main-nav button').forEach((b,i) => b.classList.toggle('active', i === idx));
+}
+
+// ============================================================
+// MODULE 0: FILAS
+// ============================================================
+let filaAnimInterval = null;
+let filaAnimStep = 0;
+
+function updateFila() {
+  const n = +document.getElementById('fila-n').value;
+  document.getElementById('fila-n-val').textContent = n;
+  clearInterval(filaAnimInterval);
+  filaAnimStep = 0;
+  renderFilaSlots(n, []);
+  renderFilaSteps(n);
+  const fact = factorial(n);
+  const terms = Array.from({length: n}, (_,i) => n - i).join(' × ');
+  document.getElementById('fila-formula').textContent = terms;
+  document.getElementById('fila-total').textContent = fact.toLocaleString();
+  document.getElementById('perm-list').innerHTML = '';
+  document.getElementById('perm-label').textContent = 'Permutações';
+}
+
+function renderFilaSlots(n, filled) {
+  const c = document.getElementById('fila-vis');
+  c.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'fila-slot' + (i < filled.length ? ' filled' : '');
+    const pos = document.createElement('span');
+    pos.className = 'pos-label';
+    pos.textContent = (i+1) + 'º';
+    slot.appendChild(pos);
+    if (i < filled.length) {
+      const em = document.createElement('span');
+      em.className = 'person-emoji';
+      em.textContent = EMOJIS[filled[i]];
+      slot.appendChild(em);
+      const nm = document.createElement('span');
+      nm.style.cssText = 'font-size:0.68rem;color:var(--muted);margin-top:2px;';
+      nm.textContent = NAMES[filled[i]];
+      slot.appendChild(nm);
+      slot.style.borderColor = COLORS[filled[i]];
+    } else {
+      slot.innerHTML += '<span style="font-size:0.75rem;color:var(--muted);margin-top:4px;">vazio</span>';
+    }
+    c.appendChild(slot);
+  }
+}
+
+function renderFilaSteps(n) {
+  const c = document.getElementById('fila-steps');
+  c.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const chip = document.createElement('div');
+    chip.className = `step-chip c${(i%5)+1}`;
+    chip.innerHTML = `<span class="num">${n - i}</span><span style="font-size:0.75rem;color:var(--muted)">${(i+1)}ª decisão</span>`;
+    c.appendChild(chip);
+  }
+}
+
+function animateFila() {
+  const n = +document.getElementById('fila-n').value;
+  clearInterval(filaAnimInterval);
+  const pool = Array.from({length: n}, (_,i) => i);
+  const chosen = [];
+  filaAnimStep = 0;
+  renderFilaSlots(n, []);
+  filaAnimInterval = setInterval(() => {
+    if (filaAnimStep >= n) { clearInterval(filaAnimInterval); return; }
+    const remaining = pool.filter(x => !chosen.includes(x));
+    const pick = remaining[Math.floor(Math.random() * remaining.length)];
+    chosen.push(pick);
+    renderFilaSlots(n, chosen);
+    filaAnimStep++;
+  }, 600);
+}
+
+function resetFila() {
+  clearInterval(filaAnimInterval);
+  const n = +document.getElementById('fila-n').value;
+  renderFilaSlots(n, []);
+  document.getElementById('perm-list').innerHTML = '';
+}
+
+function listPerms() {
+  const n = +document.getElementById('fila-n').value;
+  if (n > 6) { alert('Muitas permutações! Tente com até 6 pessoas.'); return; }
+  const pool = Array.from({length: n}, (_,i) => i);
+  const perms = permutations(pool);
+  const c = document.getElementById('perm-list');
+  c.innerHTML = '';
+  document.getElementById('perm-label').textContent = `${perms.length} permutações`;
+  perms.forEach((p, idx) => {
+    setTimeout(() => {
+      const chip = document.createElement('div');
+      chip.className = 'perm-item';
+      chip.textContent = p.map(i => NAMES[i]).join('→');
+      c.appendChild(chip);
+    }, idx * 30);
+  });
+}
+
+// ============================================================
+// MODULE 1: SANDUÍCHE
+// ============================================================
+const swData = {
+  pao: { label: '🥖 Pão', opts: ['Italiano', 'Três Queijos', 'Sete Grãos'], sel: 0, cls: 'pao' },
+  salada: { label: '🥗 Salada', opts: ['Alface', 'Tomate', 'Pepino'], sel: 0, cls: 'salada' },
+  carne: { label: '🥩 Carne', opts: ['Bovina', 'Frango', 'Suína'], sel: 0, cls: 'carne' },
+  molho: { label: '🫙 Molho', opts: ['Maionese', 'Ketchup'], sel: 0, cls: 'molho' },
+  queijo: { label: '🧀 Queijo', opts: ['Muçarela', 'Cheddar', 'Parmesão'], sel: 0, cls: 'queijo' },
+};
+
+function buildSandwich() {
+  const g = document.getElementById('sw-grid');
+  g.innerHTML = '';
+  Object.entries(swData).forEach(([key, cat]) => {
+    const div = document.createElement('div');
+    div.className = 'sw-category';
+    div.innerHTML = `<div class="sw-cat-label">${cat.label}</div>`;
+    const opts = document.createElement('div');
+    opts.className = 'sw-options';
+    cat.opts.forEach((opt, idx) => {
+      const btn = document.createElement('div');
+      btn.className = 'sw-option' + (cat.sel === idx ? ' selected' : '');
+      btn.textContent = opt;
+      btn.onclick = () => { cat.sel = idx; buildSandwich(); };
+      opts.appendChild(btn);
+    });
+    div.appendChild(opts);
+    g.appendChild(div);
+  });
+  renderSandwichVisual();
+}
+
+function renderSandwichVisual() {
+  const v = document.getElementById('sw-visual');
+  const order = ['pao', 'queijo', 'carne', 'salada', 'molho', 'pao'];
+  v.innerHTML = '';
+  order.forEach((key, i) => {
+    const cat = swData[key];
+    const layer = document.createElement('div');
+    const isBottomBread = i === order.length - 1;
+    layer.className = `sw-layer ${cat.cls}${isBottomBread ? ' bottom' : ''}`;
+    layer.textContent = cat.opts[cat.sel];
+    if (i === 0) layer.style.width = '200px';
+    else if (i === order.length - 1) layer.style.width = '200px';
+    else layer.style.width = (140 + i * 10) + 'px';
+    v.appendChild(layer);
+  });
+
+  // formula
+  const f = document.getElementById('sw-formula');
+  f.innerHTML = '';
+  const keys = Object.keys(swData);
+  keys.forEach((key, i) => {
+    const cat = swData[key];
+    const chip = document.createElement('div');
+    chip.className = 'formula-chip highlight';
+    chip.textContent = cat.opts.length;
+    chip.title = cat.label;
+    f.appendChild(chip);
+    if (i < keys.length - 1) {
+      const op = document.createElement('span');
+      op.className = 'formula-op';
+      op.textContent = '×';
+      f.appendChild(op);
+    }
+  });
+  const total = Object.values(swData).reduce((a,c) => a * c.opts.length, 1);
+  document.getElementById('sw-total').textContent = total;
+}
+
+// ============================================================
+// MODULE 2: VESTUÁRIO
+// ============================================================
+const shirtOpts = ['Branca','Azul','Verde','Vermelha','Amarela','Preta','Rosa','Laranja'];
+const pantsOpts = ['Jeans','Preta','Khaki','Branca','Cinza','Xadrez','Verde','Rosa'];
+const shoesOpts = ['Tênis','Sapatênis','Sandália','Bota','Mocassim','Social','Slip-on','Chinelo'];
+
+function updateVest() {
+  const s = +document.getElementById('vest-shirts').value;
+  const p = +document.getElementById('vest-pants').value;
+  const sh = +document.getElementById('vest-shoes').value;
+  document.getElementById('vest-shirts-val').textContent = s;
+  document.getElementById('vest-pants-val').textContent = p;
+  document.getElementById('vest-shoes-val').textContent = sh;
+  document.getElementById('vest-formula').textContent = `${s} × ${p} × ${sh}`;
+  document.getElementById('vest-total').textContent = (s * p * sh).toLocaleString();
+  document.getElementById('av-s').textContent = s;
+  document.getElementById('av-p').textContent = p;
+  document.getElementById('av-sh').textContent = sh;
+  document.getElementById('av-t').textContent = (s * p * sh).toLocaleString();
+}
+
+function animateVest() {
+  const s = +document.getElementById('vest-shirts').value;
+  const p = +document.getElementById('vest-pants').value;
+  const sh = +document.getElementById('vest-shoes').value;
+  const shirt = shirtOpts[Math.floor(Math.random() * s)];
+  const pants = pantsOpts[Math.floor(Math.random() * p)];
+  const shoes = shoesOpts[Math.floor(Math.random() * sh)];
+
+  const avShirt = document.getElementById('av-shirt');
+  const avPants = document.getElementById('av-pants');
+  const avShoes = document.getElementById('av-shoes');
+
+  avShirt.className = 'avatar-piece shirt empty'; avShirt.textContent = '...';
+  avPants.className = 'avatar-piece pants empty'; avPants.textContent = '...';
+  avShoes.className = 'avatar-piece shoes empty'; avShoes.textContent = '...';
+
+  setTimeout(() => { avShirt.className = 'avatar-piece filled-shirt'; avShirt.textContent = `👕 ${shirt}`; }, 400);
+  setTimeout(() => { avPants.className = 'avatar-piece filled-pants'; avPants.textContent = `👖 ${pants}`; }, 800);
+  setTimeout(() => { avShoes.className = 'avatar-piece filled-shoes'; avShoes.textContent = `👟 ${shoes}`; }, 1200);
+}
+
+// ============================================================
+// MODULE 3: NÚMEROS
+// ============================================================
+let numAlgs = [1, 2, 3];
+let numRep = true;
+
+function buildAlgGroup() {
+  const g = document.getElementById('num-alg-group');
+  g.innerHTML = '';
+  for (let d = 0; d <= 9; d++) {
+    const item = document.createElement('div');
+    item.className = 'cb-item' + (numAlgs.includes(d) ? ' on' : '');
+    item.innerHTML = `<span class="cb-check"></span>${d}`;
+    item.onclick = () => {
+      if (numAlgs.includes(d)) { if (numAlgs.length > 1) numAlgs = numAlgs.filter(x => x !== d); }
+      else numAlgs.push(d);
+      buildAlgGroup(); updateNums();
+    };
+    g.appendChild(item);
+  }
+}
+
+function toggleRep() {
+  numRep = !numRep;
+  const t = document.getElementById('rep-toggle');
+  t.classList.toggle('on', numRep);
+  updateNums();
+}
+
+function updateNums() {
+  const nd = +document.getElementById('num-digits').value;
+  document.getElementById('num-digits-val').textContent = nd;
+  const g = document.getElementById('num-alg-group');
+  document.getElementById('num-alg-group').querySelectorAll('.cb-item').forEach((el, d) => {
+    el.className = 'cb-item' + (numAlgs.includes(d) ? ' on' : '');
+  });
+
+  // display slots
+  const disp = document.getElementById('num-display');
+  disp.innerHTML = '';
+  for (let i = 0; i < nd; i++) {
+    const box = document.createElement('div');
+    box.className = `digit-box slot${(i%4)+1}`;
+    const avail = numRep ? numAlgs.length : Math.max(0, numAlgs.length - i);
+    box.textContent = avail;
+    box.title = `${avail} opções para a posição ${i+1}`;
+    disp.appendChild(box);
+  }
+
+  // formula & total
+  let total = 1;
+  const parts = [];
+  for (let i = 0; i < nd; i++) {
+    const avail = numRep ? numAlgs.length : Math.max(0, numAlgs.length - i);
+    parts.push(avail);
+    total *= avail;
+  }
+  document.getElementById('num-formula').textContent = parts.join(' × ');
+  document.getElementById('num-total').textContent = total;
+
+  // possibilidades (only if small)
+  const pg = document.getElementById('poss-grid');
+  pg.innerHTML = '';
+  if (total <= 100 && nd <= 3) {
+    const poss = genNumbers(numAlgs, nd, numRep);
+    document.getElementById('num-poss-label').textContent = `${poss.length} possibilidades`;
+    poss.slice(0, 100).forEach((n, i) => {
+      setTimeout(() => {
+        const chip = document.createElement('div');
+        chip.className = 'poss-chip';
+        chip.textContent = n;
+        pg.appendChild(chip);
+      }, i * 20);
+    });
+  } else {
+    document.getElementById('num-poss-label').textContent = 'Possibilidades (muitas para listar)';
+  }
+
+  const fb = document.getElementById('num-feedback');
+  fb.innerHTML = numRep
+    ? `<strong>Com repetição:</strong> cada posição tem sempre ${numAlgs.length} opções → ${parts.join(' × ')} = <strong>${total}</strong>`
+    : `<strong>Sem repetição:</strong> cada posição tem 1 opção a menos que a anterior → ${parts.join(' × ')} = <strong>${total}</strong>`;
+}
+
+function genNumbers(algs, digits, rep) {
+  const sorted = [...algs].sort((a,b) => a-b);
+  const results = [];
+  const bt = (cur, used) => {
+    if (cur.length === digits) { results.push(cur.join('')); return; }
+    sorted.forEach(d => {
+      if (!rep && used.includes(d)) return;
+      bt([...cur, d], [...used, d]);
+    });
+  };
+  bt([], []);
+  return results;
+}
+
+// ============================================================
+// MODULE 4: ADITIVO
+// ============================================================
+const juiceNames = ['Laranja','Maracujá','Abacaxi','Uva','Limão','Manga','Caju','Goiaba'];
+const sodaNames = ['Cola','Guaraná','Limão','Laranja','Uva','Gengibre','Tônica','Citrus'];
+
+function updateAdd() {
+  const a = +document.getElementById('add-a').value;
+  const b = +document.getElementById('add-b').value;
+  document.getElementById('add-a-val').textContent = a;
+  document.getElementById('add-b-val').textContent = b;
+  document.getElementById('add-formula').textContent = `${a} + ${b}`;
+  document.getElementById('add-total').textContent = a + b;
+  document.getElementById('add-a-count').textContent = a;
+  document.getElementById('add-b-count').textContent = b;
+  document.getElementById('add-total-big').textContent = a + b;
+  document.getElementById('comp-mult').textContent = a * b;
+  document.getElementById('comp-add').textContent = a + b;
+
+  const ai = document.getElementById('add-a-items');
+  ai.innerHTML = '';
+  juiceNames.slice(0, a).forEach(n => {
+    const el = document.createElement('div'); el.className = 'set-item'; el.textContent = n; ai.appendChild(el);
+  });
+  const bi = document.getElementById('add-b-items');
+  bi.innerHTML = '';
+  sodaNames.slice(0, b).forEach(n => {
+    const el = document.createElement('div'); el.className = 'set-item'; el.textContent = n; bi.appendChild(el);
+  });
+}
+
+// ============================================================
+// MODULE 5: QUIZ
+// ============================================================
+const quizData = [
+  {
+    q: 'Marta tem 5 blusas e 4 saias. De quantos modos diferentes ela pode se vestir com uma blusa e uma saia?',
+    opts: ['9', '20', '24', '16'],
+    ans: 1,
+    exp: 'PFC: 5 blusas × 4 saias = 20 combinações. Cada escolha é independente → multiplicamos!'
+  },
+  {
+    q: 'De quantas maneiras podem-se organizar 5 pessoas em uma fila?',
+    opts: ['25', '60', '100', '120'],
+    ans: 3,
+    exp: '5! = 5 × 4 × 3 × 2 × 1 = 120. A 1ª posição tem 5 opções, a 2ª tem 4, e assim por diante.'
+  },
+  {
+    q: 'Quantos anagramas podemos formar com as letras da palavra LUA?',
+    opts: ['3', '6', '9', '12'],
+    ans: 1,
+    exp: '3 letras distintas → 3! = 3 × 2 × 1 = 6 anagramas: LUA, LAU, ULA, UAL, ALU, AUL.'
+  },
+  {
+    q: 'Uma escola oferece 4 ações socioambientais e 3 formas de divulgação. Quantos projetos diferentes podem ser elaborados (1 ação + 1 forma)?',
+    opts: ['7', '12', '16', '24'],
+    ans: 1,
+    exp: 'PFC: 4 ações × 3 formas = 12 projetos. Como cada projeto combina UMA ação E UMA forma → multiplicamos.'
+  },
+  {
+    q: 'Uma lanchonete oferece 3 sucos e 4 refrigerantes. Um estudante vai escolher APENAS UMA bebida. Quantas opções ele tem?',
+    opts: ['12', '7', '1', '24'],
+    ans: 1,
+    exp: 'Princípio Aditivo: suco OU refrigerante → 3 + 4 = 7 opções. Como são mutuamente exclusivos (não bebe os dois ao mesmo tempo) → somamos!'
+  },
+  {
+    q: 'Quantos números de 2 algarismos DISTINTOS podem ser formados com 1, 2 e 3?',
+    opts: ['9', '3', '6', '12'],
+    ans: 2,
+    exp: 'Sem repetição: 1ª posição → 3 opções; 2ª posição → 2 opções (um já foi usado). Total: 3 × 2 = 6. São: 12, 13, 21, 23, 31, 32.'
+  }
+];
+
+let quizAnswered = [];
+let quizScore = 0;
+
+function buildQuiz() {
+  const c = document.getElementById('quiz-container');
+  c.innerHTML = '';
+  quizData.forEach((q, qi) => {
+    const card = document.createElement('div');
+    card.className = 'quiz-card';
+    card.innerHTML = `
+      <div class="quiz-num">Questão ${qi + 1} de ${quizData.length}</div>
+      <div class="quiz-q">${q.q}</div>
+      <div class="quiz-opts" id="q-opts-${qi}">
+        ${q.opts.map((opt, oi) => `
+          <div class="quiz-opt${quizAnswered[qi] !== undefined ? ' disabled' : ''} ${quizAnswered[qi] === oi ? (oi === q.ans ? 'correct' : 'wrong') : (quizAnswered[qi] !== undefined && oi === q.ans ? 'correct' : '')}"
+               onclick="answerQuiz(${qi}, ${oi})">
+            <div class="opt-letter">${String.fromCharCode(65+oi)}</div>
+            ${opt}
+          </div>`).join('')}
+      </div>
+      <div class="quiz-feedback ${quizAnswered[qi] !== undefined ? 'show' : ''} ${quizAnswered[qi] === q.ans ? 'ok' : 'err'}" id="q-fb-${qi}">
+        ${quizAnswered[qi] !== undefined ? (quizAnswered[qi] === q.ans ? '✅ Correto! ' : '❌ Errado. ') + q.exp : ''}
+      </div>`;
+    c.appendChild(card);
+  });
+  updateScore();
+}
+
+function answerQuiz(qi, oi) {
+  if (quizAnswered[qi] !== undefined) return;
+  quizAnswered[qi] = oi;
+  if (oi === quizData[qi].ans) quizScore++;
+  buildQuiz();
+}
+
+function updateScore() {
+  const answered = quizAnswered.filter(x => x !== undefined).length;
+  document.getElementById('score-pts').textContent = quizScore;
+  document.getElementById('score-frac').textContent = `${answered} / ${quizData.length}`;
+  document.getElementById('score-prog').style.width = `${(answered/quizData.length)*100}%`;
+}
+
+function resetQuiz() {
+  quizAnswered = [];
+  quizScore = 0;
+  buildQuiz();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+updateFila();
+buildSandwich();
+updateVest();
+buildAlgGroup();
+updateNums();
+updateAdd();
+buildQuiz();
+</script>
+</body>
+</html>
